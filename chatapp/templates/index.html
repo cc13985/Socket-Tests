@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask-SocketIO Example</title>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #e5e5e5;
+        }
+
+        #chat {
+            width: 50%;
+        }
+
+        #chat input {
+            width: 99%;
+        }
+
+        ul {
+            height: 500px;
+            background-color: white;
+            overflow-y: scroll;
+        }
+
+        li {
+            list-style: none;
+        }
+
+        #landing {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat">
+        <ul id="chat-messages">
+        </ul>
+        <input type="text" id="message" placeholder="Enter a Message">
+        <input type="file" id="fileInput">
+        <button id="uploadButton">Upload File</button>
+        <div id="sharedFiles"></div>
+    </div>
+    <script>
+        const socket = io({autoConnect: false});
+
+        socket.connect();
+
+        socket.on("connect", function() {
+            socket.emit("user_join", username);
+         })
+
+        document.getElementById("message").addEventListener("keyup", function (event) {
+            if (event.key == "Enter") {
+                let message = document.getElementById("message").value;
+                socket.emit("new_message", message);
+                document.getElementById("message").value = "";
+            }
+        })
+
+        socket.on("chat", function(data) {
+            let ul = document.getElementById("chat-messages");
+            let li = document.createElement("li");
+            li.appendChild(document.createTextNode(data["username"] + ": " + data["message"]));
+            ul.appendChild(li);
+            ul.scrolltop = ul.scrollHeight;
+        })
+
+        document.getElementById("uploadButton").addEventListener("click", function () {
+    const fileInput = document.getElementById("fileInput");
+    const file = fileInput.files[0];
+
+    if (file) {
+        const reader = new FileReader();
+
+        reader.onloadend = function () {
+            const fileContent = reader.result;
+            socket.emit("file_shared", { fileContent, fileName: file.name });
+        };
+
+        reader.readAsDataURL(file);
+    }
+});
+
+socket.on("file_shared", function (data) {
+    const sharedFilesDiv = document.getElementById("sharedFiles");
+    const message = `${data.username} shared a file: ${data.fileName}`;
+
+    const fileLink = document.createElement("a");
+    fileLink.href = data.fileContent;
+    fileLink.download = data.fileName;
+    fileLink.textContent = message;
+
+    const br = document.createElement("br");
+
+    sharedFilesDiv.appendChild(fileLink);
+    sharedFilesDiv.appendChild(br);
+});
+
+
+    </script>
+</body>
+</html>
